@@ -9,7 +9,9 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
     public string ID => "CustomPathPlugin";
     public string name => "Custom Path";
     public string author => "Reality Quintupled";
-    public string version => "0.1";
+    public string version => "0.3";
+
+    public static CustomPathPlugin instance;
 
     public IPluginSettings settings => new EmptySettings();
 
@@ -19,10 +21,13 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
 
     private string[] paths;
     private int pathIndex;
-    private TextMesh pathNameDisplay;
     private PathRenderer pathRenderer;
 
-    private const int debugLayer = 12;
+    private TextMesh previous;
+    private TextMesh next;
+    private TextMesh pathNameDisplay;
+    private GameObject previousButton;
+    private GameObject nextButton;
 
     private float c;
     private float speed;
@@ -35,19 +40,58 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
     
     public void OnActivate(PluginCameraHelper helper) {
         this.helper = helper;
+        if (instance == null)
+            instance = this;
 
         paths = Directory.GetFiles(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LIV", "CustomCameraPaths"));
 
         GameObject nameObject = new GameObject("PathName");
-        nameObject.layer = debugLayer;
-        nameObject.transform.position = new Vector3(0, 2, 2);
-        nameObject.transform.localScale = new Vector3(.05f, .05f, .05f);
+        nameObject.transform.position = new Vector3(0, 1.5f, 1);
+        nameObject.transform.localScale = new Vector3(.03f, .03f, .03f);
         pathNameDisplay = nameObject.AddComponent<TextMesh>();
         pathNameDisplay.fontSize = 32;
         pathNameDisplay.alignment = TextAlignment.Center;
 
-        GameObject pathObj = new GameObject("Camera Path");
-        pathObj.layer = debugLayer;
+        GameObject previousObject = new GameObject("PreviousText");
+        previousObject.transform.position = new Vector3(-.25f, 1.25f, .75f);
+        previousObject.transform.localScale = new Vector3(.03f, .03f, .03f);
+        previous = previousObject.AddComponent<TextMesh>();
+        previous.fontSize = 28;
+        previous.alignment = TextAlignment.Center;
+        previous.text = "<<";
+
+        previousButton = new GameObject("PreviousButton");
+        previousButton.AddComponent<BoxCollider>();
+        previousButton.transform.localScale = new Vector3(.2f, .2f, .05f);
+        previousButton.transform.position = previousObject.transform.position;
+        InputObject previousInput = previousButton.AddComponent<InputObject>();
+        previousInput.direction = -1;
+        previousInput.textMesh = previous;
+
+        GameObject nextObject = new GameObject("PreviousText");
+        nextObject.transform.position = new Vector3(.25f, 1.25f, .75f);
+        nextObject.transform.localScale = new Vector3(.03f, .03f, .03f);
+        next = nextObject.AddComponent<TextMesh>();
+        next.fontSize = 28;
+        next.alignment = TextAlignment.Center;
+        next.text = ">>";
+
+        nextButton = new GameObject("PreviousButton");
+        nextButton.AddComponent<BoxCollider>();
+        nextButton.transform.localScale = new Vector3(.2f, .2f, .05f);
+        nextButton.transform.position = nextObject.transform.position;
+        InputObject nextInput = nextButton.AddComponent<InputObject>();
+        nextInput.direction = 1;
+        nextInput.textMesh = next;
+
+        SphereCollider leftHandCollider = helper.playerLeftHand.gameObject.AddComponent<SphereCollider>();
+        leftHandCollider.radius = .1f;
+        leftHandCollider.isTrigger = true;
+        SphereCollider rightHandCollider = helper.playerRightHand.gameObject.AddComponent<SphereCollider>();
+        rightHandCollider.radius = .1f;
+        rightHandCollider.isTrigger = true;
+
+        GameObject pathObj = new GameObject("CameraPath");
         pathObj.transform.position = Vector3.zero;
         pathRenderer = pathObj.AddComponent<PathRenderer>();
 
@@ -62,15 +106,11 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
     
     public void OnFixedUpdate() {}
     
-    public void OnUpdate() {
-        if (Input.GetKeyDown(KeyCode.PageUp)) {
-            pathIndex = ++pathIndex % paths.Length;
-            ImportCameraPath(paths[pathIndex]);
-        }
-        if (Input.GetKeyDown(KeyCode.PageDown)) {
-            pathIndex = (--pathIndex + paths.Length) % paths.Length;
-            ImportCameraPath(paths[pathIndex]);
-        }
+    public void OnUpdate() {}
+
+    public void ChangePath(int direction) {
+        pathIndex = (pathIndex + direction + paths.Length) % paths.Length;
+        ImportCameraPath(paths[pathIndex]);
     }
 
     public void OnLateUpdate() {
