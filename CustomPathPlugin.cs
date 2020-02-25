@@ -127,11 +127,13 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
         }
     }
     
-    public void OnDeactivate() {}
-    
-    public void OnDestroy() {
+    public void OnDeactivate() {
         Object.Destroy(pathNameDisplay.gameObject);
+        Object.Destroy(fixedPoint);
+        Object.Destroy(pathRenderer.gameObject);
     }
+    
+    public void OnDestroy() {}
 }
 // There be no settings soooo...
 public class EmptySettings : IPluginSettings { }

@@ -11,8 +11,7 @@ class PathRenderer : MonoBehaviour {
     }
 
     public void AddPoints(List<Vector3> points) {
-        foreach (Transform point in transform)
-            Destroy(point.gameObject);
+        ClearPoints();
         this.points = points;
         foreach(Vector3 point in points) {
             GameObject pointObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -20,6 +19,11 @@ class PathRenderer : MonoBehaviour {
             pointObj.transform.parent = transform;
             pointObj.transform.localScale = new Vector3(.05f, .05f, .05f);
         }
+    }
+
+    public void ClearPoints() {
+        foreach (Transform point in transform)
+            Destroy(point.gameObject);
     }
 
     public void RenderSpline(Spline spline, float c) {
