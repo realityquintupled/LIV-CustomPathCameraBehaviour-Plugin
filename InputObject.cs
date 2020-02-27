@@ -1,9 +1,10 @@
 ﻿using System.Collections;
+using TMPro;
 using UnityEngine;
 
 class InputObject : MonoBehaviour{
     public int direction;
-    public TextMesh textMesh;
+    public TextMeshPro textMesh;
 
     private bool triggered = false;
     private string text;

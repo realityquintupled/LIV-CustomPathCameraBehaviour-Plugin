@@ -2,14 +2,16 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 public class CustomPathPlugin : IPluginCameraBehaviour {
     public string ID => "CustomPathPlugin";
     public string name => "Custom Path";
     public string author => "Reality Quintupled";
-    public string version => "0.3";
+    public string version => "0.4";
 
     public static CustomPathPlugin instance;
 
@@ -23,9 +25,9 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
     private int pathIndex;
     private PathRenderer pathRenderer;
 
-    private TextMesh previous;
-    private TextMesh next;
-    private TextMesh pathNameDisplay;
+    private TextMeshPro previous;
+    private TextMeshPro next;
+    private TextMeshPro pathNameDisplay;
     private GameObject previousButton;
     private GameObject nextButton;
 
@@ -36,6 +38,8 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
     private Transform target;
     private Spline spline;
 
+    private Scene pluginScene;
+
     public CustomPathPlugin() { }
     
     public void OnActivate(PluginCameraHelper helper) {
@@ -43,65 +47,72 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
         if (instance == null)
             instance = this;
 
+        pluginScene = SceneManager.CreateScene("CustomCameraPath");
+
         paths = Directory.GetFiles(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LIV", "CustomCameraPaths"));
 
-        GameObject nameObject = new GameObject("PathName");
+        GameObject nameObject = S(new GameObject("PathName"));
         nameObject.transform.position = new Vector3(0, 1.5f, 1);
         nameObject.transform.localScale = new Vector3(.03f, .03f, .03f);
-        pathNameDisplay = nameObject.AddComponent<TextMesh>();
+        pathNameDisplay = nameObject.AddComponent<TextMeshPro>();
         pathNameDisplay.fontSize = 32;
-        pathNameDisplay.alignment = TextAlignment.Center;
+        pathNameDisplay.alignment = TextAlignmentOptions.Center;
 
-        GameObject previousObject = new GameObject("PreviousText");
+        GameObject previousObject = S(new GameObject("PreviousText"));
         previousObject.transform.position = new Vector3(-.25f, 1.25f, .75f);
         previousObject.transform.localScale = new Vector3(.03f, .03f, .03f);
-        previous = previousObject.AddComponent<TextMesh>();
+        previous = previousObject.AddComponent<TextMeshPro>();
         previous.fontSize = 28;
-        previous.alignment = TextAlignment.Center;
+        previous.alignment = TextAlignmentOptions.Center;
         previous.text = "<<";
 
-        previousButton = new GameObject("PreviousButton");
+        previousButton = S(new GameObject("PreviousButton"));
         previousButton.AddComponent<BoxCollider>();
-        previousButton.transform.localScale = new Vector3(.2f, .2f, .05f);
+        previousButton.transform.localScale = new Vector3(.05f, .05f, .01f);
         previousButton.transform.position = previousObject.transform.position;
         InputObject previousInput = previousButton.AddComponent<InputObject>();
         previousInput.direction = -1;
         previousInput.textMesh = previous;
 
-        GameObject nextObject = new GameObject("PreviousText");
+        GameObject nextObject = S(new GameObject("NextText"));
         nextObject.transform.position = new Vector3(.25f, 1.25f, .75f);
         nextObject.transform.localScale = new Vector3(.03f, .03f, .03f);
-        next = nextObject.AddComponent<TextMesh>();
+        next = nextObject.AddComponent<TextMeshPro>();
         next.fontSize = 28;
-        next.alignment = TextAlignment.Center;
+        next.alignment = TextAlignmentOptions.Center;
         next.text = ">>";
 
-        nextButton = new GameObject("PreviousButton");
+        nextButton = S(new GameObject("NextButton"));
         nextButton.AddComponent<BoxCollider>();
-        nextButton.transform.localScale = new Vector3(.2f, .2f, .05f);
+        nextButton.transform.localScale = new Vector3(.05f, .05f, .01f);
         nextButton.transform.position = nextObject.transform.position;
         InputObject nextInput = nextButton.AddComponent<InputObject>();
         nextInput.direction = 1;
         nextInput.textMesh = next;
 
         SphereCollider leftHandCollider = helper.playerLeftHand.gameObject.AddComponent<SphereCollider>();
-        leftHandCollider.radius = .1f;
+        leftHandCollider.radius = .03f;
         leftHandCollider.isTrigger = true;
         SphereCollider rightHandCollider = helper.playerRightHand.gameObject.AddComponent<SphereCollider>();
-        rightHandCollider.radius = .1f;
+        rightHandCollider.radius = .03f;
         rightHandCollider.isTrigger = true;
 
-        GameObject pathObj = new GameObject("CameraPath");
+        GameObject pathObj = S(new GameObject("CameraPath"));
         pathObj.transform.position = Vector3.zero;
         pathRenderer = pathObj.AddComponent<PathRenderer>();
 
-        fixedPoint = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        fixedPoint = S(GameObject.CreatePrimitive(PrimitiveType.Sphere));
         fixedPoint.transform.localScale = new Vector3(.05f, .05f, .05f);
         fixedPoint.GetComponent<Renderer>().material.color = new Color(34, 139, 34);
 
         ImportCameraPath(paths[0]);
     }
     
+    public GameObject S(GameObject go) {
+        SceneManager.MoveGameObjectToScene(go, pluginScene);
+        return go;
+    }
+
     public void OnSettingsDeserialized() {}
     
     public void OnFixedUpdate() {}
@@ -168,9 +179,7 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
     }
     
     public void OnDeactivate() {
-        Object.Destroy(pathNameDisplay.gameObject);
-        Object.Destroy(fixedPoint);
-        Object.Destroy(pathRenderer.gameObject);
+        SceneManager.UnloadSceneAsync(pluginScene);
     }
     
     public void OnDestroy() {}
