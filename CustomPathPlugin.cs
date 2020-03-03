@@ -11,7 +11,7 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
     public string ID => "CustomPathPlugin";
     public string name => "Custom Path";
     public string author => "Reality Quintupled";
-    public string version => "0.4";
+    public string version => "0.4.1";
 
     public static CustomPathPlugin instance;
 
@@ -38,20 +38,22 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
     private Transform target;
     private Spline spline;
 
-    private Scene pluginScene;
+    private Transform wrapper;
 
     public CustomPathPlugin() { }
     
     public void OnActivate(PluginCameraHelper helper) {
-        this.helper = helper;
         if (instance == null)
             instance = this;
 
-        pluginScene = SceneManager.CreateScene("CustomCameraPath");
+        this.helper = helper;
 
-        GameObject nameObject = S(new GameObject("PathName"));
+        wrapper = new GameObject("CustomCameraPathPluginWrapper").transform;
+
+        GameObject nameObject = new GameObject("PathName");
         nameObject.transform.position = new Vector3(0, 1.5f, 1);
         nameObject.transform.localScale = new Vector3(.03f, .03f, .03f);
+        nameObject.transform.parent = wrapper;
         pathNameDisplay = nameObject.AddComponent<TextMeshPro>();
         pathNameDisplay.fontSize = 32;
         pathNameDisplay.alignment = TextAlignmentOptions.Center;
@@ -67,59 +69,61 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
         if (paths.Length == 0)
             return;
 
-        GameObject previousObject = S(new GameObject("PreviousText"));
+        GameObject previousObject = new GameObject("PreviousText");
         previousObject.transform.position = new Vector3(-.25f, 1.25f, .75f);
         previousObject.transform.localScale = new Vector3(.03f, .03f, .03f);
+        previousObject.transform.parent = wrapper;
         previous = previousObject.AddComponent<TextMeshPro>();
         previous.fontSize = 28;
         previous.alignment = TextAlignmentOptions.Center;
         previous.text = "<<";
 
-        previousButton = S(new GameObject("PreviousButton"));
+        previousButton = new GameObject("PreviousButton");
         previousButton.AddComponent<BoxCollider>();
         previousButton.transform.localScale = new Vector3(.05f, .05f, .01f);
         previousButton.transform.position = previousObject.transform.position;
+        previousButton.transform.parent = wrapper;
         InputObject previousInput = previousButton.AddComponent<InputObject>();
         previousInput.direction = -1;
         previousInput.textMesh = previous;
 
-        GameObject nextObject = S(new GameObject("NextText"));
+        GameObject nextObject = new GameObject("NextText");
         nextObject.transform.position = new Vector3(.25f, 1.25f, .75f);
         nextObject.transform.localScale = new Vector3(.03f, .03f, .03f);
+        nextObject.transform.parent = wrapper;
         next = nextObject.AddComponent<TextMeshPro>();
         next.fontSize = 28;
         next.alignment = TextAlignmentOptions.Center;
         next.text = ">>";
 
-        nextButton = S(new GameObject("NextButton"));
+        nextButton = new GameObject("NextButton");
         nextButton.AddComponent<BoxCollider>();
         nextButton.transform.localScale = new Vector3(.05f, .05f, .01f);
         nextButton.transform.position = nextObject.transform.position;
+        nextButton.transform.parent = wrapper;
         InputObject nextInput = nextButton.AddComponent<InputObject>();
         nextInput.direction = 1;
         nextInput.textMesh = next;
 
-        SphereCollider leftHandCollider = helper.playerLeftHand.gameObject.AddComponent<SphereCollider>();
-        leftHandCollider.radius = .03f;
-        leftHandCollider.isTrigger = true;
-        SphereCollider rightHandCollider = helper.playerRightHand.gameObject.AddComponent<SphereCollider>();
-        rightHandCollider.radius = .03f;
-        rightHandCollider.isTrigger = true;
+        if(helper.playerLeftHand.GetComponent<SphereCollider>() == null) {
+            SphereCollider leftHandCollider = helper.playerLeftHand.gameObject.AddComponent<SphereCollider>();
+            leftHandCollider.radius = .03f;
+            leftHandCollider.isTrigger = true;
+            SphereCollider rightHandCollider = helper.playerRightHand.gameObject.AddComponent<SphereCollider>();
+            rightHandCollider.radius = .03f;
+            rightHandCollider.isTrigger = true;
+        }
 
-        GameObject pathObj = S(new GameObject("CameraPath"));
+        GameObject pathObj = new GameObject("CameraPath");
         pathObj.transform.position = Vector3.zero;
+        pathObj.transform.parent = wrapper;
         pathRenderer = pathObj.AddComponent<PathRenderer>();
 
-        fixedPoint = S(GameObject.CreatePrimitive(PrimitiveType.Sphere));
+        fixedPoint = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         fixedPoint.transform.localScale = new Vector3(.05f, .05f, .05f);
         fixedPoint.GetComponent<Renderer>().material.color = new Color(34, 139, 34);
 
         ImportCameraPath(paths[0]);
-    }
-    
-    public GameObject S(GameObject go) {
-        SceneManager.MoveGameObjectToScene(go, pluginScene);
-        return go;
     }
 
     public void OnSettingsDeserialized() {}
@@ -134,6 +138,10 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
     }
 
     public void OnLateUpdate() {
+        if(target == null) {
+            pathNameDisplay.text = "Error: Camera target missing!";
+            return;
+        }
         Vector3 newPos = spline.PointAtTime(Time.time * speed, c);
         helper.UpdateCameraPose(newPos, Quaternion.LookRotation(target.position - newPos, Vector3.up));
     }
@@ -188,7 +196,8 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
     }
     
     public void OnDeactivate() {
-        SceneManager.UnloadSceneAsync(pluginScene);
+        if (wrapper != null)
+            Object.Destroy(wrapper.gameObject);
     }
     
     public void OnDestroy() {}
