@@ -10,6 +10,8 @@ public class Spline {
 
     public Vector3 PointAtTime(float t, float c) {
         t = t % points.Count;
+        if (t < 0)
+            t = points.Count - -t;
         int index = (int)t;
         Vector3 a = index == 0 ? points[points.Count - 1] : points[index - 1];
         Vector3 k1 = points[index];

@@ -49,14 +49,23 @@ public class CustomPathPlugin : IPluginCameraBehaviour {
 
         pluginScene = SceneManager.CreateScene("CustomCameraPath");
 
-        paths = Directory.GetFiles(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LIV", "CustomCameraPaths"));
-
         GameObject nameObject = S(new GameObject("PathName"));
         nameObject.transform.position = new Vector3(0, 1.5f, 1);
         nameObject.transform.localScale = new Vector3(.03f, .03f, .03f);
         pathNameDisplay = nameObject.AddComponent<TextMeshPro>();
         pathNameDisplay.fontSize = 32;
         pathNameDisplay.alignment = TextAlignmentOptions.Center;
+        pathNameDisplay.text = "No paths found!";
+
+        string pathDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LIV", "CustomCameraPaths");
+
+        if (!Directory.Exists(pathDirectory))
+            return;
+
+        paths = Directory.GetFiles(pathDirectory, "*.path");
+
+        if (paths.Length == 0)
+            return;
 
         GameObject previousObject = S(new GameObject("PreviousText"));
         previousObject.transform.position = new Vector3(-.25f, 1.25f, .75f);
